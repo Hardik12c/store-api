@@ -5,7 +5,7 @@ const productrouter=express.Router();
 productrouter.route('/')
 .get(async(req,res)=>{
     try {
-        const {name,featured,price,sort}=req.query; // it will take only those things which are present in api and drop other values
+        const {name,featured,price,sort,fields}=req.query; // it will take only those things which are present in api and drop other values
         queryobj={};
         if(featured){
             queryobj.featured=(featured==='true')?true:false;
@@ -17,13 +17,21 @@ productrouter.route('/')
             queryobj.price=price;
         }
         let results= Product.find(queryobj);
-        console.log(typeof(results));
         if(sort){
             const sortlist=sort.split(',').join(' ');
             results=results.sort(sortlist)
         }else{
             results=results.sort('createdAt');
         }
+        if(fields){
+            const fieldlist=fields.split(',').join(' ');
+            results=results.select(fieldlist);
+        }
+        const limit=Number(req.query.limit);
+        const page=Number(req.query.page);
+        const skip=(page-1)*limit;
+
+        results=results.skip(skip).limit(limit);
         products=await results;  //waiting for results to be fetch
         res.status(200).json({products,length:products.length});
     } catch (error) {
